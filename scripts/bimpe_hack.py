@@ -1,15 +1,18 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-BimpeAI hack-night control script.
+BimpeAI Fraud Alert Verification Agent helper.
+
+Purpose:
+  Create/test a fraud-track BimpeAI agent from your own IDE/terminal.
 
 Secrets:
   - Reads BIMPE_API_KEY from the environment.
   - Never writes the API key to disk.
 
 Fast path:
-  python scripts/bimpe_hack.py list-workflows --search invoice
-  python scripts/bimpe_hack.py bootstrap --payment-link "https://buy.stripe.com/test_..."
-  python scripts/bimpe_hack.py chat "I got your message. Can I pay tomorrow?"
+  python scripts/bimpe_hack.py bootstrap
+  python scripts/bimpe_hack.py links
+  python scripts/bimpe_hack.py chat "Was this transaction really from my bank?"
   python scripts/bimpe_hack.py call +447700900123
 """
 
@@ -42,11 +45,11 @@ def require_key() -> str:
     if not key:
         raise BimpeError("Set BIMPE_API_KEY first. Example: $env:BIMPE_API_KEY='sk_...'.")
     if not key.startswith("sk_"):
-        raise BimpeError("BIMPE_API_KEY should look like sk_...; event codes are not API keys.")
+        raise BimpeError("BIMPE_API_KEY should look like sk_...; event/team codes are not API keys.")
     return key
 
 
-def session() -> requests.Session:
+def http() -> requests.Session:
     s = requests.Session()
     retry = Retry(
         total=3,
@@ -61,19 +64,18 @@ def session() -> requests.Session:
     return s
 
 
-def request(method: str, path: str, *, body: dict[str, Any] | None = None, params: dict[str, Any] | None = None) -> dict[str, Any]:
+def api(method: str, path: str, *, body: dict[str, Any] | None = None, params: dict[str, Any] | None = None) -> dict[str, Any]:
     key = require_key()
-    url = f"{BASE_URL}{path}"
     headers = {
         "Authorization": f"Bearer {key}",
         "Accept": "application/json",
-        "X-Request-Id": f"bimpe-hack-{uuid.uuid4()}",
+        "X-Request-Id": f"fraud-hack-{uuid.uuid4()}",
     }
     if method.upper() in {"POST", "PATCH", "PUT", "DELETE"}:
         headers["Content-Type"] = "application/json"
-        headers["Idempotency-Key"] = f"bimpe-hack-{uuid.uuid4()}"
+        headers["Idempotency-Key"] = f"fraud-hack-{uuid.uuid4()}"
 
-    r = session().request(method, url, headers=headers, json=body, params=params, timeout=30)
+    r = http().request(method, f"{BASE_URL}{path}", headers=headers, json=body, params=params, timeout=30)
     try:
         payload = r.json()
     except Exception:
@@ -81,6 +83,16 @@ def request(method: str, path: str, *, body: dict[str, Any] | None = None, param
     if r.status_code >= 400:
         raise BimpeError(f"{method} {path} failed [{r.status_code}]: {json.dumps(payload, indent=2)}")
     return payload
+
+
+def print_json(value: Any) -> None:
+    print(json.dumps(value, indent=2, ensure_ascii=False))
+
+
+def load_state() -> dict[str, Any]:
+    if not STATE_PATH.exists():
+        raise BimpeError("No bimpe_agent_state.json yet. Run bootstrap first or pass --agent-id.")
+    return json.loads(STATE_PATH.read_text(encoding="utf-8"))
 
 
 def save_state(**updates: Any) -> dict[str, Any]:
@@ -92,103 +104,111 @@ def save_state(**updates: Any) -> dict[str, Any]:
     return state
 
 
-def load_state() -> dict[str, Any]:
-    if not STATE_PATH.exists():
-        raise BimpeError("No bimpe_agent_state.json yet. Run bootstrap first or pass --agent-id.")
-    return json.loads(STATE_PATH.read_text(encoding="utf-8"))
+def resolve_agent_id(args: argparse.Namespace) -> str:
+    return args.agent_id or load_state()["agent_id"]
 
 
-def compact_print(obj: Any) -> None:
-    print(json.dumps(obj, indent=2, ensure_ascii=False))
+def fraud_system_prompt() -> str:
+    return """
+You are Sentinel, a fraud alert verification voice/chat agent for Primo Bank.
 
+Mission:
+Verify whether a flagged card transaction was authorised, reduce fraud loss, and protect customers from social-engineering risk.
 
-def revenue_workflow_payload(payment_link: str) -> dict[str, Any]:
-    today = "25 June 2026"
-    system_prompt = f"""
-You are Revenue Recovery Agent for Aperture Studios, a London photography studio.
+Demo case:
+- Customer: Maya Okafor
+- Transaction ID: TXN-88419
+- Merchant: TechWorld Online
+- Amount: £486.72
+- Time: 18:42 Europe/London on 25 June 2026
+- Card reference: ending 4821 only
+- Risk score: 92/100
+- Status: temporary hold pending customer verification
 
-Mission: recover overdue revenue without damaging the customer relationship.
-Tone: concise, warm, professional UK English.
-Date context: {today}.
+Allowed outcomes:
+1. Customer recognises transaction -> mark as customer-confirmed and explain that the hold can be released by the bank system.
+2. Customer denies transaction -> mark as suspected fraud, explain that the card should remain blocked, and escalate to a human fraud specialist.
+3. Customer is unsure, angry, vulnerable, or identity cannot be verified -> escalate to a human fraud specialist.
 
-Primary demo customer:
-- Customer: Alex Morgan
-- Invoice: INV-1042
-- Amount: £220
-- Status: 14 days overdue
-- Service: corporate headshot session
-- Payment link: {payment_link}
-- Callback calendar: offer today 19:30, tomorrow 10:00, or tomorrow 15:00.
-
-Rules:
-1. First identify the customer and overdue invoice.
-2. Offer exactly three paths: pay now, schedule a callback, or dispute/escalate.
-3. Do not claim payment is complete unless an external payment tool confirms it.
-4. If customer says wrong person, financial hardship, fraud, legal issue, anger, or dispute: apologise and escalate to finance@aperture.demo.
-5. If customer asks for card/bank details, redirect them to the secure payment link.
-6. Close every successful path with the next action and expected timing.
+Hard safety rules:
+- Never ask for or accept full card number, CVV, PIN, password, one-time passcode, or online banking login.
+- Never ask the customer to move money, install software, or share screen/device access.
+- Never reveal unnecessary sensitive data. Use partial card reference only.
+- If the customer challenges legitimacy, give a safe callback path: hang up and call the number on the back of their card or in the banking app.
+- Keep the call under 90 seconds unless escalation is needed.
+- Be calm, precise, and bank-grade professional.
 """.strip()
 
+
+def fraud_workflow_payload() -> dict[str, Any]:
     return {
-        "name": "Revenue Recovery Agent — Hack Night",
-        "description": "WhatsApp/web/voice agent that recovers overdue invoices, sends payment links, books callbacks, and escalates disputes.",
-        "category": "payments",
-        "system_prompt": system_prompt,
-        "tags": ["hack-night", "revenue-recovery", "invoice", "voice", "whatsapp"],
-        "channels": ["webchat", "whatsapp", "telephony"],
-        "integrations": ["stripe", "google_calendar"],
+        "name": "Fraud Alert Verification Agent — Hack Night",
+        "description": "Outbound voice/chat agent that verifies flagged card transactions, blocks suspected fraud, and escalates risky cases.",
+        "category": "financial-services",
+        "system_prompt": fraud_system_prompt(),
+        "tags": ["hack-night", "fraud", "voice", "banking", "card-security"],
+        "channels": ["telephony", "webchat", "whatsapp"],
+        "integrations": ["custom_api"],
         "setup_time": 10,
         "setup_steps": [
-            "Create or paste a Stripe test payment link.",
-            "Use the test channel link for web/WhatsApp demo.",
-            "Optionally place a test outbound call from the API.",
-            "Show the conversation log and escalation rule in the demo.",
+            "Create the agent.",
+            "Add the demo transaction as text knowledge.",
+            "Use test webchat for dry-run.",
+            "Place a test outbound call for the live demo if telephony is enabled.",
         ],
         "faq": [
             {
-                "question": "What happens if the customer disputes the invoice?",
-                "answer": "The agent apologises, captures the reason, and escalates to finance@aperture.demo without pressuring payment.",
+                "question": "What if the customer does not trust the call?",
+                "answer": "The agent tells them to hang up and call the official number on their card or banking app.",
             },
             {
-                "question": "Can it confirm payment?",
-                "answer": "Only after payment-tool confirmation; otherwise it says the link has been sent and the account will update after confirmation.",
+                "question": "What sensitive data can the agent ask for?",
+                "answer": "No full card number, CVV, PIN, password, OTP, or banking credentials. Only safe verification and yes/no transaction recognition.",
             },
         ],
         "rules": [
             {
-                "name": "Escalate sensitive cases",
-                "trigger": "Customer disputes invoice, claims wrong recipient, mentions fraud/legal issue/hardship, or becomes angry.",
-                "condition": "Any high-risk or relationship-sensitive payment case.",
-                "response": "Acknowledge, stop collection pressure, summarise the issue, and escalate to finance@aperture.demo.",
-                "action": "escalate_to_human",
+                "name": "Block and escalate denied transaction",
+                "trigger": "Customer says they do not recognise the flagged transaction.",
+                "condition": "Transaction denied or identity uncertain.",
+                "response": "Mark suspected fraud, keep the card blocked, and escalate to a human fraud specialist.",
+                "action": "escalate_fraud_case",
                 "enabled": True,
-            }
+            },
+            {
+                "name": "Safe callback on legitimacy concerns",
+                "trigger": "Customer asks whether this call/message is real.",
+                "condition": "Customer expresses mistrust, phishing concern, or requests proof.",
+                "response": "Advise them to hang up and call the official number on their card or banking app. Do not pressure them to continue.",
+                "action": "safe_callback_guidance",
+                "enabled": True,
+            },
         ],
         "flows": [
             {
-                "name": "Overdue invoice recovery",
-                "description": "Collect overdue payment or route to callback/escalation.",
-                "category": "payments",
+                "name": "Flagged transaction verification",
+                "description": "Verify a high-risk card transaction and route to allow/block/escalate outcome.",
+                "category": "fraud",
                 "priority": 1,
                 "is_active": True,
                 "trigger_keywords": [
-                    {"keyword": "invoice", "weight": "high"},
-                    {"keyword": "overdue", "weight": "high"},
-                    {"keyword": "payment", "weight": "high"},
-                    {"keyword": "callback", "weight": "medium"},
+                    {"keyword": "fraud", "weight": "high"},
+                    {"keyword": "transaction", "weight": "high"},
+                    {"keyword": "card", "weight": "high"},
+                    {"keyword": "block", "weight": "medium"},
                 ],
                 "conversation_steps": [
                     {
                         "type": "text_response",
-                        "content": "Hi Alex — this is Aperture Studios. Invoice INV-1042 for £220 is 14 days overdue. Would you like to pay securely now, schedule a callback, or raise a query?",
-                        "action": "present_recovery_options",
-                        "followup": "If they choose pay, send the payment link. If callback, offer slots. If query/dispute, escalate.",
+                        "content": "Hello, this is Sentinel calling on behalf of Primo Bank's fraud team. We are checking a card transaction ending 4821. We will never ask for your PIN, password, CVV, or one-time code.",
+                        "action": "safe_intro",
+                        "followup": "If the customer mistrusts the call, give safe callback guidance. Otherwise continue to transaction recognition.",
                     },
                     {
                         "type": "text_response",
-                        "content": f"Secure payment link: {payment_link}. I’ll mark this as pending until payment confirmation comes through.",
-                        "action": "send_payment_link",
-                        "followup": "Ask if they need anything else or prefer a callback.",
+                        "content": "Do you recognise a £486.72 transaction at TechWorld Online at 18:42 today? Please answer yes, no, or unsure.",
+                        "action": "verify_transaction",
+                        "followup": "Yes -> customer-confirmed. No -> suspected fraud and escalate. Unsure -> escalate.",
                     },
                 ],
             }
@@ -196,37 +216,36 @@ Rules:
     }
 
 
-def kb_content(payment_link: str) -> str:
-    return f"""
-DEMO DATA — Aperture Studios Revenue Recovery
+def fraud_knowledge() -> str:
+    return """
+DEMO DATA — Primo Bank Fraud Alert
 
-Customer: Alex Morgan
-Phone: use the demo participant phone number
-Email: alex@example.demo
-Invoice: INV-1042
-Amount: £220
-Service: corporate headshot session
-Due date: 11 June 2026
-Current date: 25 June 2026
-Status: 14 days overdue
-Payment link: {payment_link}
+Customer: Maya Okafor
+Transaction ID: TXN-88419
+Merchant: TechWorld Online
+Amount: £486.72
+Time: 18:42 Europe/London on 25 June 2026
+Card reference: ending 4821 only
+Risk score: 92/100
+Current status: temporary hold pending customer verification
+Escalation queue: human fraud specialist
+Escalation email: fraud-ops@primo.demo
 
-Approved callback slots:
-- Today 19:30 Europe/London
-- Tomorrow 10:00 Europe/London
-- Tomorrow 15:00 Europe/London
+Outcome policy:
+- Recognised by customer: mark customer-confirmed; explain the bank can release the hold.
+- Not recognised: mark suspected fraud; keep card blocked; escalate.
+- Unsure or identity concern: escalate.
+- Customer doubts legitimacy: advise safe callback using official card/app number.
 
-Escalation email: finance@aperture.demo
-
-Demo success condition:
-The agent should either send the payment link, book a callback slot, or escalate a dispute.
+Forbidden requests:
+Never ask for CVV, PIN, full card number, password, one-time code, screen sharing, remote access, or money movement.
 """.strip()
 
 
-def create_workflow(payment_link: str) -> dict[str, Any]:
-    payload = revenue_workflow_payload(payment_link)
+def create_workflow() -> dict[str, Any]:
+    payload = fraud_workflow_payload()
     try:
-        return request("POST", "/workflows", body=payload)["data"]
+        return api("POST", "/workflows", body=payload)["data"]
     except BimpeError as e:
         print(f"Full workflow payload failed; retrying minimal workflow. Details:\n{e}", file=sys.stderr)
         minimal = {
@@ -235,66 +254,68 @@ def create_workflow(payment_link: str) -> dict[str, Any]:
             "category": payload["category"],
             "system_prompt": payload["system_prompt"],
         }
-        return request("POST", "/workflows", body=minimal)["data"]
+        return api("POST", "/workflows", body=minimal)["data"]
 
 
 def cmd_list_workflows(args: argparse.Namespace) -> None:
-    params = {"limit": args.limit, "scope": args.scope}
+    params: dict[str, Any] = {"limit": args.limit, "scope": args.scope}
     if args.search:
         params["search"] = args.search
-    data = request("GET", "/workflows", params=params)
-    rows = data.get("data", [])
-    for row in rows:
+    data = api("GET", "/workflows", params=params)
+    for row in data.get("data", []):
         print(f"{row.get('id')} | {row.get('name')} | {row.get('category')} | owner={row.get('is_owner')}")
     if args.json:
-        compact_print(data)
+        print_json(data)
 
 
 def cmd_bootstrap(args: argparse.Namespace) -> None:
-    payment_link = args.payment_link
     workflow_id = args.workflow_id
-
-    if not workflow_id:
-        print("Creating Revenue Recovery workflow...")
-        workflow = create_workflow(payment_link)
-        workflow_id = workflow["id"]
+    if workflow_id:
+        workflow = api("GET", f"/workflows/{workflow_id}")["data"]
     else:
-        workflow = request("GET", f"/workflows/{workflow_id}")["data"]
-
+        print("Creating Fraud Alert Verification workflow...")
+        workflow = create_workflow()
+        workflow_id = workflow["id"]
     print(f"Workflow: {workflow_id} — {workflow.get('name')}")
 
-    agent_body = {
-        "workflow_id": workflow_id,
-        "name": args.agent_name,
-        "description": "Hack-night demo agent: overdue invoice recovery across webchat/WhatsApp/voice.",
-    }
-    agent = request("POST", "/agents", body=agent_body)["data"]
+    agent = api(
+        "POST",
+        "/agents",
+        body={
+            "workflow_id": workflow_id,
+            "name": args.agent_name,
+            "description": "Hack-night fraud alert verification agent for outbound voice/chat demo.",
+        },
+    )["data"]
     agent_id = agent["id"]
     print(f"Agent: {agent_id} — {agent.get('name')}")
 
-    patch = {
-        "persona": "friendly",
-        "timezone": "Europe/London",
-        "business_name": "Aperture Studios",
-        "business_address": "32-37 Cowper St, London EC2A 4AW",
-        "business_email": "finance@aperture.demo",
-        "business_description": "Photography studio using AI to recover overdue invoices politely via chat and voice.",
-        "escalation_email": "finance@aperture.demo",
-    }
     try:
-        request("PATCH", f"/agents/{agent_id}", body=patch)
+        api(
+            "PATCH",
+            f"/agents/{agent_id}",
+            body={
+                "persona": "professional",
+                "timezone": "Europe/London",
+                "business_name": "Primo Bank Fraud Operations",
+                "business_address": "32-37 Cowper St, London EC2A 4AW",
+                "business_email": "fraud-ops@primo.demo",
+                "business_description": "Fraud operations team verifying high-risk card transactions through safe AI voice workflows.",
+                "escalation_email": "fraud-ops@primo.demo",
+            },
+        )
     except BimpeError as e:
         print(f"Non-blocking: agent profile patch failed:\n{e}", file=sys.stderr)
 
     try:
-        kb = request(
+        kb = api(
             "POST",
             f"/agents/{agent_id}/knowledge_bases",
             body={
                 "type": "text",
-                "name": "Demo invoice + escalation policy",
-                "description": "Single-customer demo dataset for hack-night revenue recovery.",
-                "content": kb_content(payment_link),
+                "name": "Demo flagged transaction and safety policy",
+                "description": "Single-case demo dataset for fraud alert verification.",
+                "content": fraud_knowledge(),
             },
         )["data"]
         print(f"Knowledge base: {kb.get('id')} — {kb.get('name')}")
@@ -302,135 +323,124 @@ def cmd_bootstrap(args: argparse.Namespace) -> None:
         print(f"Non-blocking: knowledge base creation failed:\n{e}", file=sys.stderr)
 
     try:
-        request("PATCH", f"/agents/{agent_id}/live-status", body={"status": "live", "status_reason": "Hack-night demo ready"})
+        api("PATCH", f"/agents/{agent_id}/live-status", body={"status": "live", "status_reason": "Hack-night fraud demo ready"})
     except BimpeError as e:
         print(f"Non-blocking: live-status update failed:\n{e}", file=sys.stderr)
 
     links = {}
     try:
-        links = request("GET", f"/agents/{agent_id}/deployment/agent-test-code")["data"]
+        links = api("GET", f"/agents/{agent_id}/deployment/agent-test-code")["data"]
         print("Deployment/test links:")
-        compact_print(links)
+        print_json(links)
     except BimpeError as e:
         print(f"Non-blocking: test-code retrieval failed:\n{e}", file=sys.stderr)
 
-    state = save_state(agent_id=agent_id, workflow_id=workflow_id, payment_link=payment_link, deployment=links)
+    state = save_state(agent_id=agent_id, workflow_id=workflow_id, deployment=links)
     print(f"Saved state: {STATE_PATH.resolve()}")
-    compact_print(state)
+    print_json(state)
 
 
-def resolve_agent_id(args: argparse.Namespace) -> str:
-    if args.agent_id:
-        return args.agent_id
-    return load_state()["agent_id"]
-
-
-def cmd_get_links(args: argparse.Namespace) -> None:
+def cmd_links(args: argparse.Namespace) -> None:
     agent_id = resolve_agent_id(args)
-    data = request("GET", f"/agents/{agent_id}/deployment/agent-test-code")["data"]
+    data = api("GET", f"/agents/{agent_id}/deployment/agent-test-code")["data"]
     save_state(agent_id=agent_id, deployment=data)
-    compact_print(data)
+    print_json(data)
 
 
 def cmd_chat(args: argparse.Namespace) -> None:
     agent_id = resolve_agent_id(args)
-    body = {
-        "message": args.message,
-        "role": "user",
-        "channel_type": args.channel,
-        "channel_user_id": args.user_id,
-        "channel_username": args.username,
-        "is_test_channel": True,
-    }
-    msg = request("POST", f"/agents/{agent_id}/conversations/messages", body=body)["data"]
-    print("Sent message:")
-    compact_print(msg)
-    print("\nNow run: python scripts/bimpe_hack.py conversations")
+    data = api(
+        "POST",
+        f"/agents/{agent_id}/conversations/messages",
+        body={
+            "message": args.message,
+            "role": "user",
+            "channel_type": args.channel,
+            "channel_user_id": args.user_id,
+            "channel_username": args.username,
+            "is_test_channel": True,
+        },
+    )
+    print_json(data)
 
 
 def cmd_conversations(args: argparse.Namespace) -> None:
     agent_id = resolve_agent_id(args)
-    params = {"limit": args.limit, "is_test_channel": True, "sort": "-updated_at"}
-    data = request("GET", f"/agents/{agent_id}/conversations", params=params)
-    compact_print(data)
+    data = api("GET", f"/agents/{agent_id}/conversations", params={"limit": args.limit, "is_test_channel": True, "sort": "-updated_at"})
+    print_json(data)
 
 
 def cmd_messages(args: argparse.Namespace) -> None:
     agent_id = resolve_agent_id(args)
-    conversation_id = args.conversation_id
-    data = request("GET", f"/agents/{agent_id}/conversations/{conversation_id}/messages", params={"limit": args.limit})
-    compact_print(data)
+    data = api("GET", f"/agents/{agent_id}/conversations/{args.conversation_id}/messages", params={"limit": args.limit})
+    print_json(data)
 
 
 def cmd_call(args: argparse.Namespace) -> None:
     agent_id = resolve_agent_id(args)
-    body = {"destination": args.destination, "is_test_call": args.test}
-    data = request("POST", f"/agents/{agent_id}/calls", body=body)
-    compact_print(data)
+    data = api("POST", f"/agents/{agent_id}/calls", body={"destination": args.destination, "is_test_call": args.test})
+    print_json(data)
 
 
 def cmd_phone_numbers(args: argparse.Namespace) -> None:
-    data = request("GET", "/phone-numbers", params={"limit": args.limit})
-    compact_print(data)
+    print_json(api("GET", "/phone-numbers", params={"limit": args.limit}))
 
 
 def cmd_request_number(args: argparse.Namespace) -> None:
-    body = {
-        "business_name": "Aperture Studios",
-        "intended_use": "Hack-night demo: inbound and outbound AI voice agent for overdue invoice recovery.",
+    state = STATE_PATH.exists() and load_state() or {}
+    body: dict[str, Any] = {
+        "business_name": "Primo Bank Fraud Operations",
+        "intended_use": "Hack-night demo: inbound/outbound AI voice agent for safe fraud alert verification.",
         "region": args.region,
         "agent_count": 1,
         "outbound_minutes": args.outbound_minutes,
     }
-    state = STATE_PATH.exists() and load_state() or {}
     if state.get("agent_id"):
         body["submitted_by_agent_id"] = state["agent_id"]
-    data = request("POST", "/phone-numbers/request", body=body)
-    compact_print(data)
+    print_json(api("POST", "/phone-numbers/request", body=body))
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="BimpeAI hack-night API helper")
+    p = argparse.ArgumentParser(description="BimpeAI fraud-track API helper")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     w = sub.add_parser("list-workflows")
-    w.add_argument("--search", default="")
+    w.add_argument("--search", default="fraud")
     w.add_argument("--scope", default="accessible", choices=["accessible", "owned", "public"])
     w.add_argument("--limit", type=int, default=30)
     w.add_argument("--json", action="store_true")
     w.set_defaults(func=cmd_list_workflows)
 
     b = sub.add_parser("bootstrap")
-    b.add_argument("--workflow-id", help="Use an existing/cloned workflow instead of creating one.")
-    b.add_argument("--payment-link", default="https://buy.stripe.com/test_demo_payment_link")
-    b.add_argument("--agent-name", default=f"Revenue Recovery Agent {time.strftime('%H%M')}")
+    b.add_argument("--workflow-id", help="Use an existing public fraud workflow instead of creating one.")
+    b.add_argument("--agent-name", default=f"Fraud Alert Verification Agent {time.strftime('%H%M')}")
     b.set_defaults(func=cmd_bootstrap)
 
-    gl = sub.add_parser("links")
-    gl.add_argument("--agent-id")
-    gl.set_defaults(func=cmd_get_links)
+    links = sub.add_parser("links")
+    links.add_argument("--agent-id")
+    links.set_defaults(func=cmd_links)
 
-    c = sub.add_parser("chat")
-    c.add_argument("message")
-    c.add_argument("--agent-id")
-    c.add_argument("--channel", default="webchat", choices=["webchat", "whatsapp", "telephony"])
-    c.add_argument("--user-id", default=str(uuid.uuid4()))
-    c.add_argument("--username", default="Alex Morgan")
-    c.set_defaults(func=cmd_chat)
+    chat = sub.add_parser("chat")
+    chat.add_argument("message")
+    chat.add_argument("--agent-id")
+    chat.add_argument("--channel", default="webchat", choices=["webchat", "whatsapp", "telephony"])
+    chat.add_argument("--user-id", default=str(uuid.uuid4()))
+    chat.add_argument("--username", default="Maya Okafor")
+    chat.set_defaults(func=cmd_chat)
 
     conv = sub.add_parser("conversations")
     conv.add_argument("--agent-id")
     conv.add_argument("--limit", type=int, default=10)
     conv.set_defaults(func=cmd_conversations)
 
-    m = sub.add_parser("messages")
-    m.add_argument("conversation_id")
-    m.add_argument("--agent-id")
-    m.add_argument("--limit", type=int, default=20)
-    m.set_defaults(func=cmd_messages)
+    msg = sub.add_parser("messages")
+    msg.add_argument("conversation_id")
+    msg.add_argument("--agent-id")
+    msg.add_argument("--limit", type=int, default=20)
+    msg.set_defaults(func=cmd_messages)
 
     call = sub.add_parser("call")
-    call.add_argument("destination", help="E.164 phone number, e.g. +447700900123")
+    call.add_argument("destination", help="E.164 number, e.g. +447700900123")
     call.add_argument("--agent-id")
     call.add_argument("--live", dest="test", action="store_false", help="Use live telephony; requires configured live channel.")
     call.set_defaults(test=True, func=cmd_call)

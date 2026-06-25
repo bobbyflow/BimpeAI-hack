@@ -2,27 +2,23 @@
 
 Owner: covifranklin
 
-> ⚠️ **PIVOT (25 Jun):** The build is now the **Fraud Alert Verification** voice agent,
-> not invoice recovery. See `CLAUDE.md` for the mission and `PLAN.md` for the full
-> build + demo plan (incoming). The invoice story below is kept only for reference.
-
-## 60-second story (NEW — fraud)
+## 60-second story
 
 A bank's monitoring system flags a suspicious card transaction. Our agent **calls the
-customer**, asks if they made it, and on "no" it **freezes the card**, **escalates to a
+customer**, asks if they made it, and on "no" it **keeps the card blocked**, **escalates to a
 human**, and **sends a WhatsApp confirmation** — containing fraud in seconds, not hours.
-
-## 60-second story (OLD — invoice, reference only)
-
-We built a BimpeAI revenue recovery agent for a small business. It contacts a customer about an overdue invoice, gives safe options, sends a payment link, schedules a callback, or escalates sensitive cases.
 
 ## Happy path
 
-1. Customer asks about overdue invoice.
-2. Agent identifies invoice and amount.
-3. Agent offers: pay now, callback, or dispute.
-4. Customer chooses pay now.
-5. Agent sends secure payment link and sets expectation that payment is pending confirmation.
+1. Agent calls the customer about a flagged transaction.
+2. Agent gives the safety disclaimer: it will never ask for PIN, CVV, password, or one-time code.
+3. Agent asks whether the customer recognises the transaction.
+4. Customer says "no".
+5. Agent marks suspected fraud, keeps the card blocked, escalates to a human specialist, and confirms next steps.
+
+## Trust/safety path
+
+If the customer asks "how do I know this is real?", the agent tells them to hang up and call the official number on the back of their card or in the banking app.
 
 ## Fallback if API/live demo fails
 
@@ -30,4 +26,4 @@ Show the script command, explain the intended API call, then read the expected r
 
 ## Demo line
 
-"The important part is not just sending reminders. It is collecting revenue while preserving customer trust through escalation rules and safe payment handling."
+"The important part is not just making a call. It is reducing fraud loss while preserving customer trust through safe verification, no sensitive credential collection, and immediate escalation."

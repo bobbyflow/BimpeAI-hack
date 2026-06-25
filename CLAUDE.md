@@ -1,4 +1,4 @@
-# Agent Onboarding — BimpeAI Fraud Alert Verification Agent
+﻿# Agent Onboarding — BimpeAI Fraud Alert Verification Agent
 
 You are helping a 3-person team **win** the London Agentic AI Hack Night (25 Jun 2026),
 Developer/API track. Read this fully before acting. Match the existing code style.
@@ -14,33 +14,32 @@ Judged on: Creativity, Execution (works end-to-end), Business Value (deployable 
 Presentation (3 min). The winning moment is **a real phone ringing live in the room**.
 
 ## Where the ground truth lives
-- API reference (offline): `bimpe_api_endpoint_notes.txt`, plus `bimpe_*.txt`.
-- Hackathon spec + 20 example workflows: `notion_resource_hub.md`.
-- Working CLI to reuse: `scripts/bimpe_hack.py` (request/session/retry/state helpers).
-  It currently bootstraps an invoice agent; it's being repurposed to fraud.
-- Authoritative build + demo plan: `PLAN.md` (read it once it exists).
+- API reference: https://docs.bimpe.ai/docs/api/
+- Hackathon workflow: Fraud Alert Verification Agent.
+- Working CLI: `scripts/bimpe_hack.py` (fraud workflow/bootstrap/chat/call helpers).
+- Demo script: `demo/DEMO_SCRIPT.md`.
 
 ## API essentials
 - Base: `https://api.bimpe.ai/api/v1/console`  ·  Auth: `Bearer $BIMPE_API_KEY`
 - Endpoints you'll use: `POST /workflows`, `POST /agents`, `POST /agents/{id}/knowledge_bases`,
   `PATCH /agents/{id}/live-status`, `GET /agents/{id}/deployment/agent-test-code`,
   `POST /agents/{id}/conversations/messages`, `POST /agents/{id}/calls` (`is_test_call=true`).
-- First-party integrations: stripe, google_calendar, google_sheets, paystack, bumpa; plus
-  custom HTTP API actions and MCP servers.
+- Useful integration path: custom HTTP API actions for mocked `block_card`, `release_hold`,
+  and `escalate_case` actions if time allows.
 
 ## Run it
 ```bash
 pip install -r requirements.txt
 export BIMPE_API_KEY=sk_...        # PowerShell:  $env:BIMPE_API_KEY='sk_...'
 python scripts/bimpe_hack.py list-workflows     # read-only smoke test
+python scripts/bimpe_hack.py bootstrap          # create fraud workflow + agent
 ```
 
 ## Rules — do not violate
 - **NEVER hardcode or commit the API key.** Env var only. It's a shared team secret.
-- **Don't break** `scripts/bimpe_hack.py`'s working commands — extend, don't blindly rewrite.
-- **Outbound voice = test telephony** (`is_test_call=true`). Do NOT rely on inbound voice;
-  it needs a provisioned UK number we won't have in time.
-- Card-block + transaction feed are **mocked**. Never claim a real block/payment happened.
+- **Outbound voice = test telephony** (`is_test_call=true`) unless a live channel is explicitly configured.
+- Card-block + transaction feed are **mocked**. Never claim a real bank action happened.
+- Never ask for full card number, CVV, PIN, password, one-time code, screen sharing, or remote access.
 - Make **small, frequent commits** with clear messages so 3 people + their agents don't collide.
 
 ## Coordinate with the human lead (Bobby) before
