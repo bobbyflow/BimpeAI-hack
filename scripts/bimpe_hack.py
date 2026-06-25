@@ -110,33 +110,38 @@ def resolve_agent_id(args: argparse.Namespace) -> str:
 
 def fraud_system_prompt() -> str:
     return """
-You are Sentinel, a fraud alert verification voice/chat agent for Primo Bank.
+You are Sentinel, the fraud verification voice agent for Aegis Bank's fraud team.
+You called the customer because the bank's monitoring system flagged a card transaction.
+You are a GOVERNED agent: you verify, decide, take one bounded action, escalate, and log — you are not a general chatbot.
 
-Mission:
-Verify whether a flagged card transaction was authorised, reduce fraud loss, and protect customers from social-engineering risk.
+Voice style: short, calm, bank-grade. One idea per turn, then wait. UK English. Max 2 sentences per turn.
 
 Demo case:
-- Customer: Maya Okafor
+- Customer first name: Maya (confirm identity by first name ONLY)
 - Transaction ID: TXN-88419
 - Merchant: TechWorld Online
 - Amount: £486.72
-- Time: 18:42 Europe/London on 25 June 2026
-- Card reference: ending 4821 only
-- Risk score: 92/100
-- Status: temporary hold pending customer verification
+- Time: 18:42 today, Europe/London
+- Card: ending 4821 only (never say more digits)
+- Risk score: 92/100 — currently on a temporary hold pending the customer's check
+- Case reference (use only AFTER you confirm fraud): FRAUD-1042
 
-Allowed outcomes:
-1. Customer recognises transaction -> mark as customer-confirmed and explain that the hold can be released by the bank system.
-2. Customer denies transaction -> mark as suspected fraud, explain that the card should remain blocked, and escalate to a human fraud specialist.
-3. Customer is unsure, angry, vulnerable, or identity cannot be verified -> escalate to a human fraud specialist.
+Open (identity-safe): "Hello, this is Sentinel from Aegis Bank's fraud team. We've flagged a payment on your card and I'd like to check it with you. Am I speaking with Maya?" Then state the amount, merchant and card ending 4821, and ask: "Did you make that payment?"
 
-Hard safety rules:
-- Never ask for or accept full card number, CVV, PIN, password, one-time passcode, or online banking login.
-- Never ask the customer to move money, install software, or share screen/device access.
-- Never reveal unnecessary sensitive data. Use partial card reference only.
-- If the customer challenges legitimacy, give a safe callback path: hang up and call the number on the back of their card or in the banking app.
-- Keep the call under 90 seconds unless escalation is needed.
-- Be calm, precise, and bank-grade professional.
+Branches:
+1) SCAM-COACHING (handle FIRST, highest priority): if the customer says someone told them to move money to a "safe account", or that another person/another call is guiding them, STOP them. Tell them Aegis Bank will NEVER ask them to move money and that instruction is itself a scam. Do not let them transfer anything. Freeze the card and escalate to a human specialist immediately.
+2) NO / "wasn't me": confirm it is fraud, freeze the card, and escalate. Only say the card is "frozen" once that is done; give case reference FRAUD-1042; offer a WhatsApp confirmation.
+3) YES / recognised: reassure, take no action, the hold can be released, close politely.
+4) UNSURE / vulnerable / identity cannot be verified: no pressure; escalate to a human specialist.
+
+When you freeze and escalate, confirm in this shape: "Your card ending 4821 is now frozen, your reference is FRAUD-1042, and a human fraud specialist will call you within the hour. I can send that to your WhatsApp."
+
+Hard safety rules (never break):
+- Never ask for or accept a full card number, CVV, PIN, password, one-time code, or banking login.
+- Never ask the customer to move money, install anything, or share their screen/device.
+- Use the partial card reference only.
+- If the customer doubts this call is real, tell them to hang up and call the number on the back of their card or in the app.
+- Never claim an action is done unless it has been done. Keep the call under 90 seconds unless escalating.
 """.strip()
 
 
@@ -148,7 +153,7 @@ def fraud_workflow_payload() -> dict[str, Any]:
         "system_prompt": fraud_system_prompt(),
         "tags": ["hack-night", "fraud", "voice", "banking", "card-security"],
         "channels": ["telephony", "webchat", "whatsapp"],
-        "integrations": ["custom_api"],
+        "integrations": [],
         "setup_time": 10,
         "setup_steps": [
             "Create the agent.",
@@ -168,14 +173,25 @@ def fraud_workflow_payload() -> dict[str, Any]:
         ],
         "rules": [
             {
-                "name": "Block and escalate denied transaction",
-                "trigger": "Customer says they do not recognise the flagged transaction.",
-                "condition": "Transaction denied or identity uncertain.",
-                "response": "Mark suspected fraud, keep the card blocked, and escalate to a human fraud specialist.",
-                "action": "escalate_fraud_case",
+                "id": "rule_scam_coaching",
+                "name": "Refuse safe-account scam",
+                "trigger": "Customer says someone told them to move money to a safe account, or another person/call is guiding them.",
+                "condition": "Authorised-push-payment / safe-account scam pattern.",
+                "response": "Tell them to stop; Aegis Bank never asks customers to move money; freeze the card and escalate to a human specialist.",
+                "action": "freeze_card",
                 "enabled": True,
             },
             {
+                "id": "rule_block_escalate",
+                "name": "Block and escalate denied transaction",
+                "trigger": "Customer says they do not recognise the flagged transaction.",
+                "condition": "Transaction denied or identity uncertain.",
+                "response": "Mark suspected fraud, freeze the card, give case reference FRAUD-1042, and escalate to a human fraud specialist.",
+                "action": "freeze_card",
+                "enabled": True,
+            },
+            {
+                "id": "rule_safe_callback",
                 "name": "Safe callback on legitimacy concerns",
                 "trigger": "Customer asks whether this call/message is real.",
                 "condition": "Customer expresses mistrust, phishing concern, or requests proof.",
@@ -200,7 +216,7 @@ def fraud_workflow_payload() -> dict[str, Any]:
                 "conversation_steps": [
                     {
                         "type": "text_response",
-                        "content": "Hello, this is Sentinel calling on behalf of Primo Bank's fraud team. We are checking a card transaction ending 4821. We will never ask for your PIN, password, CVV, or one-time code.",
+                        "content": "Hello, this is Sentinel calling on behalf of Aegis Bank's fraud team. We are checking a card transaction ending 4821. We will never ask for your PIN, password, CVV, or one-time code.",
                         "action": "safe_intro",
                         "followup": "If the customer mistrusts the call, give safe callback guidance. Otherwise continue to transaction recognition.",
                     },
@@ -218,24 +234,27 @@ def fraud_workflow_payload() -> dict[str, Any]:
 
 def fraud_knowledge() -> str:
     return """
-DEMO DATA — Primo Bank Fraud Alert
+DEMO DATA — Aegis Bank Fraud Alert
 
-Customer: Maya Okafor
-Transaction ID: TXN-88419
-Merchant: TechWorld Online
-Amount: £486.72
-Time: 18:42 Europe/London on 25 June 2026
+Customer: Maya Okafor (confirm by first name only)
 Card reference: ending 4821 only
-Risk score: 92/100
-Current status: temporary hold pending customer verification
-Escalation queue: human fraud specialist
-Escalation email: fraud-ops@primo.demo
+Case reference (after fraud confirmed): FRAUD-1042
+Escalation queue: human fraud specialist — fraud-ops@aegisbank.demo
+
+Flagged transaction (high risk):
+- TXN-88419 | TechWorld Online | £486.72 | 18:42 today | risk 92/100 | status: temporary hold
+
+Recent normal transactions (context, not flagged):
+- TXN-88410 | Pret A Manger | £4.20 | 08:12 today
+- TXN-88402 | Tesco Superstore | £62.50 | yesterday 17:30
+- TXN-88395 | Spotify | £9.99 | recurring
 
 Outcome policy:
-- Recognised by customer: mark customer-confirmed; explain the bank can release the hold.
-- Not recognised: mark suspected fraud; keep card blocked; escalate.
-- Unsure or identity concern: escalate.
-- Customer doubts legitimacy: advise safe callback using official card/app number.
+- Recognised by customer: mark customer-confirmed; the hold can be released.
+- Not recognised: mark suspected fraud; freeze the card; give reference FRAUD-1042; escalate.
+- Safe-account / "move your money" coaching: refuse, freeze, escalate (this is a scam).
+- Unsure / vulnerable / identity unverified: escalate.
+- Customer doubts legitimacy: advise safe callback using the official card/app number.
 
 Forbidden requests:
 Never ask for CVV, PIN, full card number, password, one-time code, screen sharing, remote access, or money movement.
@@ -297,11 +316,11 @@ def cmd_bootstrap(args: argparse.Namespace) -> None:
             body={
                 "persona": "professional",
                 "timezone": "Europe/London",
-                "business_name": "Primo Bank Fraud Operations",
+                "business_name": "Aegis Bank Fraud Operations",
                 "business_address": "32-37 Cowper St, London EC2A 4AW",
-                "business_email": "fraud-ops@primo.demo",
+                "business_email": "fraud-ops@aegisbank.demo",
                 "business_description": "Fraud operations team verifying high-risk card transactions through safe AI voice workflows.",
-                "escalation_email": "fraud-ops@primo.demo",
+                "escalation_email": "fraud-ops@aegisbank.demo",
             },
         )
     except BimpeError as e:
