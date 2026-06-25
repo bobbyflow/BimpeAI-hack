@@ -1,0 +1,160 @@
+List messages
+Bimpe
+Guides
+Use cases
+SDKs
+API Reference
+Search
+â
+K
+Guides
+Use cases
+SDKs
+API Reference
+BimpeAI Documentation
+Getting started
+Guides
+Use cases
+SDKs
+API Reference
+API Reference
+Agents
+Workflows
+Conversations
+Create conversation and send message
+Get message
+Get conversation
+Issue SSE stream ticket
+List conversations
+List messages
+Send message to conversation
+Update conversation AI status
+Stream messages (SSE)
+Calls
+Phone numbers
+Appendix
+API Reference
+Conversations
+List messages
+Paginated message history. Attachments include type and url (images and audio supported).
+Server URL
+loading...
+GET
+/
+api
+/
+v1
+/
+console
+/
+agents
+/
+{agentId}
+/
+conversations
+/
+{conversationId}
+/
+messages
+Send
+Authorization
+Path
+Query
+Authorization
+ApiKeyAuth
+Authorization
+Bearer <token>
+Team API key (prefix sk_). You may also send the key via X-Api-Key header.
+In
+:
+header
+Path Parameters
+agentId
+*
+string
+conversationId
+*
+string
+Query Parameters
+page
+?
+number
+Page number (1-based)
+Default
+1
+Range
+1 <= value
+limit
+?
+number
+Items per page (max 100)
+Default
+20
+Range
+1 <= value <= 100
+search
+?
+string
+Free-text search filter
+Length
+length <= 255
+sort
+?
+string
+Sort field with optional leading "-" for descending (e.g. "-created_at").
+Length
+length <= 64
+Response Body
+200
+application/json
+cURL
+JavaScript
+Go
+Python
+Java
+C#
+curl -X GET "https://example.com/api/v1/console/agents/string/conversations/string/messages"
+200
+{
+"message": "Success",
+"meta": {
+"total_count": 0,
+"page_count": 0,
+"current_page": 0,
+"limit": 0,
+"has_next_page": true,
+"has_previous_page": true
+},
+"data": [
+{
+"id": "string",
+"role": "string",
+"message": "string",
+"message_type": "string",
+"created_at": "2019-08-24T14:15:22Z",
+"attachments": [
+{
+"type": "image",
+"url": "http://example.com"
+}
+]
+}
+]
+}
+List conversations
+List conversations for an agent. Filter with channel, is_test_channel, is_ai_chat_paused, needs_attention, and search. Rate limit: 120 requests/minute per API key.
+Send message to conversation
+Send a user or assistant message to an existing conversation.
+Bimpe
+Product
+Guides
+Use cases
+API Reference
+SDKs
+TypeScript
+Python
+Resources
+GitHub
+npm
+PyPI
+Â© BimpeAI

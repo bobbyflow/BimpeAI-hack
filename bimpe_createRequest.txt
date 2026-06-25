@@ -1,0 +1,126 @@
+Submit a phone number request
+Bimpe
+Guides
+Use cases
+SDKs
+API Reference
+Search
+â
+K
+Guides
+Use cases
+SDKs
+API Reference
+BimpeAI Documentation
+Getting started
+Guides
+Use cases
+SDKs
+API Reference
+API Reference
+Agents
+Workflows
+Conversations
+Calls
+Phone numbers
+Submit a phone number request
+Get phone number assignment detail
+List team phone number assignments
+List team phone number requests
+Update phone number assignment (agent link, label)
+Appendix
+API Reference
+Phone numbers
+Submit a phone number request
+Server URL
+loading...
+POST
+/
+api
+/
+v1
+/
+console
+/
+phone-numbers
+/
+request
+Send
+Authorization
+Body
+Authorization
+ApiKeyAuth
+Authorization
+Bearer <token>
+Team API key (prefix sk_). You may also send the key via X-Api-Key header.
+In
+:
+header
+Request Body
+application/json
+TypeScript Definitions
+Use the request body type in TypeScript.
+Copy
+Response Body
+201
+cURL
+JavaScript
+Go
+Python
+Java
+C#
+curl -X POST "https://example.com/api/v1/console/phone-numbers/request" \
+-H "Content-Type: application/json" \
+-d '{
+"business_name": "Acme Support Ltd",
+"intended_use": "Inbound customer support and appointment booking",
+"region": "ng",
+"agent_count": 1,
+"outbound_minutes": 500
+}'
+201
+Empty
+Place an outbound call
+Place a test outbound call when is_test_call is true (uses BimpeAI test telephony infrastructure with capacity checks). When is_test_call is false, a configured live telephony channel is required.
+Get phone number assignment detail
+Next Page
+Bimpe
+Product
+Guides
+Use cases
+API Reference
+SDKs
+TypeScript
+Python
+Resources
+GitHub
+npm
+PyPI
+Â© BimpeAI
+business_name
+*
+string
+Length
+length <= 191
+intended_use
+*
+string
+region
+*
+string
+Value in
+"us" | "uk" | "eu" | "ng"
+agent_count
+*
+number
+Range
+1 <= value <= 50
+outbound_minutes
+*
+number
+Range
+0 <= value <= 10000
+submitted_by_agent_id
+?
+string
+Agent ID context when submitting from Deploy

@@ -1,0 +1,188 @@
+List calls
+Bimpe
+Guides
+Use cases
+SDKs
+API Reference
+Search
+â
+K
+Guides
+Use cases
+SDKs
+API Reference
+BimpeAI Documentation
+Getting started
+Guides
+Use cases
+SDKs
+API Reference
+API Reference
+Agents
+Workflows
+Conversations
+Calls
+Get call
+List calls
+Place an outbound call
+Phone numbers
+Appendix
+API Reference
+Calls
+List calls
+Paginated telephony call logs for an agent. Returns id, source, destination, status, direction, created_on, duration_seconds, is_test_call, error_reason, end_reason, ringing_at, and ended_at.
+Server URL
+loading...
+GET
+/
+api
+/
+v1
+/
+console
+/
+agents
+/
+{agentId}
+/
+calls
+Send
+Authorization
+Path
+Query
+Authorization
+ApiKeyAuth
+Authorization
+Bearer <token>
+Team API key (prefix sk_). You may also send the key via X-Api-Key header.
+In
+:
+header
+Path Parameters
+agentId
+*
+string
+Query Parameters
+page
+?
+number
+Page number (1-based)
+Default
+1
+Range
+1 <= value
+limit
+?
+number
+Items per page (max 100)
+Default
+20
+Range
+1 <= value <= 100
+search
+?
+string
+Free-text search filter
+Length
+length <= 255
+sort
+?
+string
+Sort field with optional leading "-" for descending (e.g. "-created_at").
+Length
+length <= 64
+is_test_call
+?
+boolean
+Filter test vs live calls
+status
+?
+string
+Filter by call status
+Value in
+"queued" | "ringing" | "answered" | "ended" | "busy" | "failed" | "cancelled"
+Response Body
+200
+application/json
+401
+application/json
+403
+application/json
+404
+application/json
+cURL
+JavaScript
+Go
+Python
+Java
+C#
+curl -X GET "https://example.com/api/v1/console/agents/string/calls"
+200
+401
+403
+404
+{
+"message": "Success",
+"meta": {
+"total_count": 0,
+"page_count": 0,
+"current_page": 0,
+"limit": 0,
+"has_next_page": true,
+"has_previous_page": true
+},
+"data": [
+{
+"id": "string",
+"source": "+14155550100",
+"destination": "+2348012345678",
+"status": "queued",
+"direction": "outbound",
+"created_on": "2019-08-24T14:15:22Z",
+"duration_seconds": 42,
+"is_test_call": true,
+"error_reason": "string",
+"end_reason": "string",
+"ringing_at": "2019-08-24T14:15:22Z",
+"ended_at": "2019-08-24T14:15:22Z"
+}
+]
+}
+{
+"message": "Invalid API key.",
+"error": "Unauthorized",
+"code": "api_key_invalid",
+"statusCode": 401,
+"request_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
+{
+"message": "This API key is missing the required scope: conversations:read.",
+"error": "Forbidden",
+"code": "insufficient_scope",
+"statusCode": 403,
+"request_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
+{
+"message": "Agent not found",
+"error": "Not Found",
+"code": "not_found",
+"statusCode": 404,
+"request_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
+Get call
+Single call log with started_at, ringing_at, answered_at, ended_at, and conversation_logs (voice transcript messages).
+Place an outbound call
+Place a test outbound call when is_test_call is true (uses BimpeAI test telephony infrastructure with capacity checks). When is_test_call is false, a configured live telephony channel is required.
+Bimpe
+Product
+Guides
+Use cases
+API Reference
+SDKs
+TypeScript
+Python
+Resources
+GitHub
+npm
+PyPI
+Â© BimpeAI

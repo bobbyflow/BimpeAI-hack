@@ -1,0 +1,149 @@
+Update agent live status
+Bimpe
+Guides
+Use cases
+SDKs
+API Reference
+Search
+â
+K
+Guides
+Use cases
+SDKs
+API Reference
+BimpeAI Documentation
+Getting started
+Guides
+Use cases
+SDKs
+API Reference
+API Reference
+Agents
+BimpeAI â configure integration
+Custom API â create integration
+MCP Server â create integration
+Pipedream â start OAuth onboarding
+Create agent
+Create knowledge base
+Custom API â add tool
+Delete agent
+BimpeAI â disconnect integration
+Custom API â disconnect integration
+MCP Server â disconnect integration
+Pipedream â disconnect integration
+Custom API â delete tool
+Disable actions
+MCP Server â discover tools
+Enable actions
+Get agent
+Get agent test code and channel links
+List agent actions
+List agents
+BimpeAI â list integrations
+List agent channels (deployments)
+Custom API â list integrations
+List agent integrations
+List agent knowledge bases
+MCP Server â list integrations
+Pipedream â list integrations
+MCP Server â list tools
+Custom API â list tools
+Delete knowledge base
+MCP Server â test connection
+Update agent
+Update knowledge base
+Update agent live status
+Workflows
+Conversations
+Calls
+Phone numbers
+Appendix
+API Reference
+Agents
+Update agent live status
+Set agent status to development, live, or paused with optional reason.
+Server URL
+loading...
+PATCH
+/
+api
+/
+v1
+/
+console
+/
+agents
+/
+{agentId}
+/
+live-status
+Send
+Authorization
+Path
+Body
+Authorization
+ApiKeyAuth
+Authorization
+Bearer <token>
+Team API key (prefix sk_). You may also send the key via X-Api-Key header.
+In
+:
+header
+Path Parameters
+agentId
+*
+string
+Request Body
+application/json
+TypeScript Definitions
+Use the request body type in TypeScript.
+Copy
+Response Body
+200
+application/json
+cURL
+JavaScript
+Go
+Python
+Java
+C#
+curl -X PATCH "https://example.com/api/v1/console/agents/string/live-status" \
+-H "Content-Type: application/json" \
+-d '{
+"status": "development"
+}'
+200
+{
+"message": "Success",
+"data": {
+"status": "string",
+"status_reason": "string"
+}
+}
+Update knowledge base
+Previous Page
+Clone workflow
+Clone a workflow the team owns or a public/recommended workflow. Returns a new team-owned copy with source_workflow_id set.
+Bimpe
+Product
+Guides
+Use cases
+API Reference
+SDKs
+TypeScript
+Python
+Resources
+GitHub
+npm
+PyPI
+Â© BimpeAI
+status
+*
+string
+Value in
+"development" | "live" | "paused"
+status_reason
+?
+string
+Length
+length <= 500

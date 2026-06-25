@@ -1,0 +1,189 @@
+Clone workflow
+Bimpe
+Guides
+Use cases
+SDKs
+API Reference
+Search
+â
+K
+Guides
+Use cases
+SDKs
+API Reference
+BimpeAI Documentation
+Getting started
+Guides
+Use cases
+SDKs
+API Reference
+API Reference
+Agents
+Workflows
+Clone workflow
+Create workflow
+Delete workflow
+Get workflow
+List workflows
+Update workflow
+Conversations
+Calls
+Phone numbers
+Appendix
+API Reference
+Workflows
+Clone workflow
+Clone a workflow the team owns or a public/recommended workflow. Returns a new team-owned copy with source_workflow_id set.
+Server URL
+loading...
+POST
+/
+api
+/
+v1
+/
+console
+/
+workflows
+/
+clone
+Send
+Authorization
+Body
+Authorization
+ApiKeyAuth
+Authorization
+Bearer <token>
+Team API key (prefix sk_). You may also send the key via X-Api-Key header.
+In
+:
+header
+Request Body
+application/json
+TypeScript Definitions
+Use the request body type in TypeScript.
+Copy
+Response Body
+201
+application/json
+404
+application/json
+cURL
+JavaScript
+Go
+Python
+Java
+C#
+curl -X POST "https://example.com/api/v1/console/workflows/clone" \
+-H "Content-Type: application/json" \
+-d '{
+"source_workflow_id": "string"
+}'
+201
+404
+{
+"message": "Success",
+"data": {
+"system_prompt": "string",
+"rules": [
+{
+"id": "string",
+"name": "string",
+"trigger": "string",
+"condition": "string",
+"response": "string",
+"action": "string",
+"enabled": true
+}
+],
+"flows": [
+{
+"name": "string",
+"description": "string",
+"category": "support",
+"priority": 5,
+"is_active": true,
+"trigger_keywords": [
+{
+"keyword": "string",
+"weight": "high"
+}
+],
+"conversation_steps": [
+{
+"type": "text_response",
+"content": "string",
+"action": "string",
+"followup": "string"
+}
+]
+}
+],
+"tags": [
+"string"
+],
+"integrations": [
+"string"
+],
+"channels": [
+"string"
+],
+"actions": [
+"string"
+],
+"guide": {
+"youtubeUrl": "string",
+"steps": [
+"Step 1: Configure your store",
+"Step 2: Add products"
+]
+},
+"faq": [
+{
+"question": "string",
+"answer": "string"
+}
+],
+"setup_steps": [
+"string"
+],
+"setup_time": 0,
+"video_url": "string",
+"id": "string",
+"name": "string",
+"description": "string",
+"category": "string",
+"visibility": "private",
+"is_owner": true,
+"created_at": "2019-08-24T14:15:22Z",
+"updated_at": "2019-08-24T14:15:22Z"
+}
+}
+{
+"message": "string",
+"error": "string",
+"code": "string",
+"statusCode": 0,
+"request_id": "266ea41d-adf5-480b-af50-15b940c2b846"
+}
+Update agent live status
+Set agent status to development, live, or paused with optional reason.
+Create workflow
+Create a workflow owned by the team.
+Bimpe
+Product
+Guides
+Use cases
+API Reference
+SDKs
+TypeScript
+Python
+Resources
+GitHub
+npm
+PyPI
+Â© BimpeAI
+source_workflow_id
+*
+string
+Workflow id to clone (must be team-owned or public)

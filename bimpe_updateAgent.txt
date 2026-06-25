@@ -1,0 +1,211 @@
+Update agent
+Bimpe
+Guides
+Use cases
+SDKs
+API Reference
+Search
+â
+K
+Guides
+Use cases
+SDKs
+API Reference
+BimpeAI Documentation
+Getting started
+Guides
+Use cases
+SDKs
+API Reference
+API Reference
+Agents
+BimpeAI â configure integration
+Custom API â create integration
+MCP Server â create integration
+Pipedream â start OAuth onboarding
+Create agent
+Create knowledge base
+Custom API â add tool
+Delete agent
+BimpeAI â disconnect integration
+Custom API â disconnect integration
+MCP Server â disconnect integration
+Pipedream â disconnect integration
+Custom API â delete tool
+Disable actions
+MCP Server â discover tools
+Enable actions
+Get agent
+Get agent test code and channel links
+List agent actions
+List agents
+BimpeAI â list integrations
+List agent channels (deployments)
+Custom API â list integrations
+List agent integrations
+List agent knowledge bases
+MCP Server â list integrations
+Pipedream â list integrations
+MCP Server â list tools
+Custom API â list tools
+Delete knowledge base
+MCP Server â test connection
+Update agent
+Update knowledge base
+Update agent live status
+Workflows
+Conversations
+Calls
+Phone numbers
+Appendix
+API Reference
+Agents
+Update agent
+Update agent runtime fields (not workflow skeleton).
+Server URL
+loading...
+PATCH
+/
+api
+/
+v1
+/
+console
+/
+agents
+/
+{agentId}
+Send
+Authorization
+Path
+Body
+Authorization
+ApiKeyAuth
+Authorization
+Bearer <token>
+Team API key (prefix sk_). You may also send the key via X-Api-Key header.
+In
+:
+header
+Path Parameters
+agentId
+*
+string
+Request Body
+application/json
+TypeScript Definitions
+Use the request body type in TypeScript.
+Copy
+Response Body
+200
+application/json
+cURL
+JavaScript
+Go
+Python
+Java
+C#
+curl -X PATCH "https://example.com/api/v1/console/agents/string" \
+-H "Content-Type: application/json" \
+-d '{}'
+200
+{
+"message": "Success",
+"data": {
+"id": "string",
+"name": "string",
+"description": "string",
+"workflow_id": "string",
+"language": "en",
+"persona": "professional",
+"timezone": "UTC",
+"logo": "http://example.com",
+"business_name": "string",
+"business_address": "string",
+"business_email": "string",
+"business_description": "string",
+"test_channel_code": "string",
+"status": "development",
+"status_reason": "string",
+"escalation_email": "string",
+"created_at": "2019-08-24T14:15:22Z",
+"updated_at": "2019-08-24T14:15:22Z"
+}
+}
+MCP Server â test connection
+Tests MCP server connectivity and returns success, message, and tools_count.
+Update knowledge base
+Next Page
+Bimpe
+Product
+Guides
+Use cases
+API Reference
+SDKs
+TypeScript
+Python
+Resources
+GitHub
+npm
+PyPI
+Â© BimpeAI
+name
+?
+string
+Length
+length <= 255
+description
+?
+string
+Length
+length <= 2000
+language
+?
+string
+Length
+length <= 10
+persona
+?
+string
+Value in
+"professional" | "friendly" | "concise"
+workflow_id
+?
+string
+Length
+length <= 50
+timezone
+?
+string
+Length
+length <= 64
+logo
+?
+string
+Format
+uri
+business_name
+?
+string
+Length
+length <= 255
+business_address
+?
+string
+Length
+length <= 500
+business_email
+?
+string
+Format
+email
+business_description
+?
+string
+Length
+length <= 2000
+escalation_email
+?
+string
+Format
+email

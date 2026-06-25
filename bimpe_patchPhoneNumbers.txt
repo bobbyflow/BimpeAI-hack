@@ -1,0 +1,120 @@
+Update phone number assignment (agent link, label)
+Bimpe
+Guides
+Use cases
+SDKs
+API Reference
+Search
+â
+K
+Guides
+Use cases
+SDKs
+API Reference
+BimpeAI Documentation
+Getting started
+Guides
+Use cases
+SDKs
+API Reference
+API Reference
+Agents
+Workflows
+Conversations
+Calls
+Phone numbers
+Submit a phone number request
+Get phone number assignment detail
+List team phone number assignments
+List team phone number requests
+Update phone number assignment (agent link, label)
+Appendix
+API Reference
+Phone numbers
+Update phone number assignment (agent link, label)
+Server URL
+loading...
+PATCH
+/
+api
+/
+v1
+/
+console
+/
+phone-numbers
+/
+{phoneNumberId}
+Send
+Authorization
+Path
+Body
+Authorization
+ApiKeyAuth
+Authorization
+Bearer <token>
+Team API key (prefix sk_). You may also send the key via X-Api-Key header.
+In
+:
+header
+Path Parameters
+phoneNumberId
+*
+string
+Request Body
+application/json
+TypeScript Definitions
+Use the request body type in TypeScript.
+Copy
+Response Body
+200
+application/json
+cURL
+JavaScript
+Go
+Python
+Java
+C#
+curl -X PATCH "https://example.com/api/v1/console/phone-numbers/string" \
+-H "Content-Type: application/json" \
+-d '{}'
+200
+{
+"message": "string",
+"data": {
+"id": "string",
+"agent_id": "string",
+"label": "string",
+"e164": "string",
+"created_at": "string",
+"updated_at": "string",
+"inbound_enabled": true
+}
+}
+List team phone number requests
+Previous Page
+Releases
+Published packages and changelogs for the BimpeAI SDKs.
+Bimpe
+Product
+Guides
+Use cases
+API Reference
+SDKs
+TypeScript
+Python
+Resources
+GitHub
+npm
+PyPI
+Â© BimpeAI
+agent_id
+?
+string
+|
+null
+label
+?
+string
+Length
+length <= 128
