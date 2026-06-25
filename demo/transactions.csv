@@ -1,0 +1,7 @@
+Transaction ID,Date,Time,Merchant,Category,Amount (GBP),Risk,Status
+TXN-88419,2026-06-25,18:42,TechWorld Online,Electronics,486.72,92,FLAGGED
+TXN-88410,2026-06-25,08:12,Pret A Manger,Food & Drink,4.20,2,Cleared
+TXN-88402,2026-06-24,17:30,Tesco Superstore,Groceries,62.50,3,Cleared
+TXN-88395,2026-06-22,06:00,Spotify,Subscription,9.99,1,Cleared
+TXN-88388,2026-06-21,12:15,Caffe Nero,Food & Drink,3.65,2,Cleared
+TXN-88375,2026-06-20,19:40,Uber,Transport,14.20,4,Cleared
