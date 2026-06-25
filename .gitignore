@@ -11,3 +11,10 @@ build/
 *.log
 .DS_Store
 Thumbs.db
+bimpe_agent_state.json
+*.local.json
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.vscode/
+.idea/
