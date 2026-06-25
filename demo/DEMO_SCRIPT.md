@@ -2,7 +2,17 @@
 
 Owner: covifranklin
 
-## 60-second story
+> ⚠️ **PIVOT (25 Jun):** The build is now the **Fraud Alert Verification** voice agent,
+> not invoice recovery. See `CLAUDE.md` for the mission and `PLAN.md` for the full
+> build + demo plan (incoming). The invoice story below is kept only for reference.
+
+## 60-second story (NEW — fraud)
+
+A bank's monitoring system flags a suspicious card transaction. Our agent **calls the
+customer**, asks if they made it, and on "no" it **freezes the card**, **escalates to a
+human**, and **sends a WhatsApp confirmation** — containing fraud in seconds, not hours.
+
+## 60-second story (OLD — invoice, reference only)
 
 We built a BimpeAI revenue recovery agent for a small business. It contacts a customer about an overdue invoice, gives safe options, sends a payment link, schedules a callback, or escalates sensitive cases.
 
