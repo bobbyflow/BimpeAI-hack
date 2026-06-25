@@ -25,7 +25,7 @@ except Exception:
 LEDGER_PATH = Path("bank_ledger.json")
 CASE_ID = "FRAUD-1042"
 CARD = "4821"
-CUSTOMER = "Maya Okafor"
+CUSTOMER = "Covi Okafor"
 
 DEMO_STATE = {
     "bank": "Aegis Bank",

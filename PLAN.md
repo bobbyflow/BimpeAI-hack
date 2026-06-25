@@ -2,7 +2,7 @@
 **Primo Bank "Sentinel" · London Agentic AI Hack Night · built on BimpeAI**
 
 > Authoritative build + demo plan, reconciled to the code already in `scripts/bimpe_hack.py`
-> (Primo Bank / Sentinel / Maya Okafor). Produced from a multi-agent planning pass +
+> (Primo Bank / Sentinel / Covi Okafor). Produced from a multi-agent planning pass +
 > adversarial critique. If this conflicts with an older doc, this wins.
 
 ---
@@ -84,11 +84,11 @@ The coded system prompt/flow is solid. Add:
 
 ---
 
-## 5. The 3-minute live demo (Primo Bank / Maya)
+## 5. The 3-minute live demo (Primo Bank / Covi)
 **Stage:** Bobby drives laptop (projector: live transcript + DECISION panel + webhook.site + a glimpse of the transcript/audit view). Covi holds the customer phone on speaker, reads taped lines. Rohit holds Phone 2 (WhatsApp) and presents.
 
 - **0:00–0:15 Hook (Rohit):** "UK card fraud topped £1bn+ last year. When a transaction's flagged, a human has to call — and most calls don't connect in time. So we built an agent that makes the call itself. Watch — **this phone is about to ring.**"
-- **0:15 Trigger:** Bobby hits the pre-queued `call`. "Primo Bank's monitor just flagged £486.72 at TechWorld Online on Maya's card ending 4821. Sentinel is calling her now — autonomously." Panel: `CALLING…`
+- **0:15 Trigger:** Bobby hits the pre-queued `call`. "Primo Bank's monitor just flagged £486.72 at TechWorld Online on Covi's card ending 4821. Sentinel is calling her now — autonomously." Panel: `CALLING…`
 - **0:20 Phone rings** (Covi raises it), agent speaks first: intro + "Do you recognise £486.72 at TechWorld Online at 18:42 today?"
 - **0:35 The novel beat — scam-coaching** (Covi, taped): "Actually… someone called and told me to move my money to a safe account." → agent: "Stop — don't move any money. Primo Bank will never ask that; that's the scam. I'm securing your card now."
 - **0:55 Autonomous tool-call** (Bobby points at projector flipping live): `Verdict: SUSPECTED FRAUD ✅` → `Agent called freeze_card → Card 4821: FROZEN ✅` (webhook lands) → `Escalated: fraud-ops@primo.demo ✅` → `Ref: PRIMO-FR-88419`. "The **agent** called that tool — not me."

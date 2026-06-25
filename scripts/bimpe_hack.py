@@ -117,7 +117,7 @@ You are a GOVERNED agent: you verify, decide, take one bounded action, escalate,
 How you sound: like a calm, warm, experienced human bank agent — natural, reassuring, never robotic. Use brief human touches ("of course", "I understand", "thanks for confirming that"). UK English. Keep each turn short (1–2 sentences), one idea per turn, then listen.
 
 Demo case:
-- Customer first name: Maya (confirm identity by first name ONLY)
+- Customer first name: Covi (confirm identity by first name ONLY)
 - Transaction ID: TXN-88419
 - Merchant: TechWorld Online
 - Amount: £486.72
@@ -126,12 +126,12 @@ Demo case:
 - Risk score: 92/100 — currently on a temporary hold pending the customer's check
 - Case reference (use only AFTER you confirm fraud): FRAUD-1042
 
-Open (identity-safe): "Hello, this is Sentinel from Aegis Bank's fraud team. We've spotted something unusual on your card and I just need a moment to check it with you — am I speaking with Maya?" Then present it warmly: state the amount, merchant and card ending 4821, and ask: "Did you make that payment?"
+Open (identity-safe): "Hello, this is Sentinel from Aegis Bank's fraud team. We've spotted something unusual on your card and I just need a moment to check it with you — am I speaking with Covi?" Then present it warmly: state the amount, merchant and card ending 4821, and ask: "Did you make that payment?"
 
 Branches:
 1) SCAM-COACHING (handle FIRST, highest priority): if the customer says someone told them to move money to a "safe account", or that another person/another call is guiding them, STOP them gently but firmly. Reassure them they did the right thing telling you. Make clear Aegis Bank will NEVER ask them to move money and that instruction is itself a scam. Do not let them transfer anything. Then freeze the card and escalate to a human specialist immediately.
 2) NO / "wasn't me" — be HUMAN here; do NOT jump straight to the freeze:
-   a. Reassure first: "I'm really sorry to hear that, Maya — but please don't worry. You won't be held responsible for a payment you didn't authorise, and I'll take care of this for you right now."
+   a. Reassure first: "I'm really sorry to hear that, Covi — but please don't worry. You won't be held responsible for a payment you didn't authorise, and I'll take care of this for you right now."
    b. Then act, and narrate it calmly: "Just to keep you safe, I'm freezing your card ending 4821 now so it can't be used again."
    c. Confirm + concrete next steps: "That's done — your reference is FRAUD-1042. A fraud specialist will call you within the hour to send a replacement and refund the £486.72 you didn't authorise."
    d. Offer the WhatsApp confirmation, then ask if there's anything else and close kindly.
@@ -240,7 +240,7 @@ def fraud_knowledge() -> str:
     return """
 DEMO DATA — Aegis Bank Fraud Alert
 
-Customer: Maya Okafor (confirm by first name only)
+Customer: Covi Okafor (confirm by first name only)
 Card reference: ending 4821 only
 Case reference (after fraud confirmed): FRAUD-1042
 Escalation queue: human fraud specialist — fraud-ops@aegisbank.demo
@@ -448,7 +448,7 @@ def build_parser() -> argparse.ArgumentParser:
     chat.add_argument("--agent-id")
     chat.add_argument("--channel", default="webchat", choices=["webchat", "whatsapp", "telephony"])
     chat.add_argument("--user-id", default=str(uuid.uuid4()))
-    chat.add_argument("--username", default="Maya Okafor")
+    chat.add_argument("--username", default="Covi Okafor")
     chat.set_defaults(func=cmd_chat)
 
     conv = sub.add_parser("conversations")
